@@ -1,0 +1,288 @@
+{
+  "name": "wf 6",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "db9e4284-e1ce-4dc6-9f3e-d936b470717f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://api.openweathermap.org/data/2.5/weather?q=Karachi&appid=87616c6ab6ddd8c9b1965a9fb763ccfa",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        0
+      ],
+      "id": "867de781-f9b3-4b4d-88d7-495557af914f",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM weather_sync\nWHERE city = '{{ $json.city }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "d6d9209a-065a-485d-8618-53bc10907e3f",
+      "name": "Check Record",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "1eY1qxnTEaMkPyKy",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE weather_sync\nSET temp = {{ $('SET').item.json.temp }},\nweather = '{{ $('SET').item.json.weather }}',\nupdated_at = NOW()\nWHERE city = '{{ $('SET').item.json.city }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1120,
+        -96
+      ],
+      "id": "de5e6f77-4bd5-44cf-b88d-ff20a0016425",
+      "name": "Execute a SQL query",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "1eY1qxnTEaMkPyKy",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO weather_sync (city, temp, weather, updated_at)\nVALUES (\n'{{ $('Set').item.json.city }}',\n{{ $('Set').item.json.temp }},\n'{{ $('Set').item.json.weather }}',\nNOW()\n)",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1120,
+        96
+      ],
+      "id": "675fdace-a5b2-43d7-bd42-0c4da40cd8b0",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "mySql": {
+          "id": "1eY1qxnTEaMkPyKy",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "5ae18ce1-f8ab-49bf-a630-731cb1937887",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b44577b-cdc6-4c50-ae09-3dfba2b8c4ec",
+              "name": "city",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "91b17033-a928-458d-ab06-84552355deb1",
+              "name": "temp",
+              "value": "={{ $json.main.temp }}",
+              "type": "string"
+            },
+            {
+              "id": "7e415c45-7071-4076-ab7e-37735662334f",
+              "name": "weather",
+              "value": "={{ $json.weather[0].description }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "b3ba657c-1185-4308-998e-dbaa3efaec16",
+      "name": "SET"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f5e1715e-db03-47d2-a356-1120ca489e29",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        0
+      ],
+      "id": "024779ab-c1ff-46d8-ab53-60cb1d8070ca",
+      "name": "If",
+      "alwaysOutputData": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "SET",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Record": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "SET": {
+      "main": [
+        [
+          {
+            "node": "Check Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ec7993b8-d9a3-402d-940c-1712b49fc65d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "24f9413e076b0e023c79b570ea131414d0d957ad4dd1588a7406107c11eed269"
+  },
+  "id": "ogvpnUGkmR29MMJI",
+  "tags": []
+}

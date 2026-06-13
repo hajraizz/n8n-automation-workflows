@@ -1,0 +1,302 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://fakestoreapi.com/products",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        64
+      ],
+      "id": "d2f744da-92d8-4dfa-83ad-1b03d172f519",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM products WHERE id = {{ $json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        672,
+        64
+      ],
+      "id": "8adfc223-193c-4108-a8e2-f02887a51c5e",
+      "name": "Execute a SQL query1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "1eY1qxnTEaMkPyKy",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT IGNORE INTO products (id, title, price, rating)\nVALUES (\n  {{ $json.id || $('Code').first().json.id }},\n  '{{ $json.title || $('Code').first().json.title }}',\n  {{ $json.price || $('Code').first().json.price }},\n  {{ $json.rating?.rate || $('Code').first().json.rating?.rate }}\n)",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1120,
+        64
+      ],
+      "id": "610fa716-b877-43f4-8c96-09b19d6e400d",
+      "name": "Execute a SQL query2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "1eY1qxnTEaMkPyKy",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const oldPrice = $input.first().json.price;\nconst newPrice = $('Code').first().json.price;\n\nif (oldPrice !== newPrice) {\n  return [{ json: { priceChanged: true, oldPrice, newPrice } }];\n}\nreturn [{ json: { priceChanged: false } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -128
+      ],
+      "id": "2571d46c-2757-4a7f-a00a-4b5567ae739c",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1344,
+        -32
+      ],
+      "id": "e67fad17-80f5-4956-a360-01e5d819a850",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const updated = items.filter(i => i.json.priceChanged === true).length;\nconst inserted = items.filter(i => i.json.priceChanged === undefined).length;\n\nreturn [{ json: { updated, inserted, total: items.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        48
+      ],
+      "id": "522421d6-e46e-4e5f-8736-518bb806af27",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        64
+      ],
+      "id": "ff40b505-2b0b-4692-8185-c1bd8a22d671",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.filter(item => \n  item.json.price > 50 && \n  item.json.rating.rate > 4\n);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        64
+      ],
+      "id": "28ea67dc-4ab1-410c-8db8-08a63c468865",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        0,
+        -352
+      ],
+      "id": "d8d24905-1b2f-4747-a377-49e5d80cad0e",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "mySql": {
+          "id": "1eY1qxnTEaMkPyKy",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3a2fd414-a3c9-42f6-b789-3de7147c4903",
+              "leftValue": "={{ $json.existsInDB }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        64
+      ],
+      "id": "ab743405-cb85-4607-9ac3-0f2055cc1dfc",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "99fca1bf-f8ce-4455-a159-eb9dd02c0b11",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "24f9413e076b0e023c79b570ea131414d0d957ad4dd1588a7406107c11eed269"
+  },
+  "id": "oFD7wcr05R1n0nJe",
+  "tags": []
+}
