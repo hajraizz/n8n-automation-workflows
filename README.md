@@ -1,2 +1,1 @@
-"# cricket-squad-optimizer" 
-"# n8n-automation-workflows" 
+# n8n-automation-workflows 
